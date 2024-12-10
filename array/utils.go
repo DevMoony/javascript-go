@@ -2,6 +2,7 @@ package array
 
 import (
 	"fmt"
+	"reflect"
 
 	"github.com/iVitaliya/colors-go"
 )
@@ -45,6 +46,32 @@ func appendValue[T any](arr []T, value T) []T {
 	_arr = append(_arr, value)
 
 	return _arr
+}
+
+func flattenArray[T comparable](input interface{}, depth int) []T {
+	if depth <= 0 {
+		return []T{input.(T)}
+	}
+
+	v := reflect.ValueOf(input)
+
+	if v.Kind() != reflect.Slice {
+		return []T{input.(T)}
+	}
+
+	var result []T
+
+	for i := 0; i < v.Len(); i++ {
+		elem := v.Index(i).Interface()
+
+		if reflect.TypeOf(elem).Kind() == reflect.Slice {
+			result = append(result, flattenArray[T](elem, depth-1)...)
+		} else {
+			result = append(result, elem.(T))
+		}
+	}
+
+	return result
 }
 
 func searchIndex[T any](arr []T, term T) int {
