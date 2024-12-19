@@ -1,0 +1,6 @@
+library: false
+warnOnImplicitThis: false
+name: "devmoony/go-vulnerabilities-pack"
+version: 1.0.0
+dependencies:
+  codeql/go-queries: "*"

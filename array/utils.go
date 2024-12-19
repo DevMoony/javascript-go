@@ -15,6 +15,8 @@ const (
 	ERROR
 )
 
+const maxInt int = int(^uint(0) >> 1)
+
 func print(state int, text ...string) {
 	var (
 		st    string
