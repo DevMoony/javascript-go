@@ -5,7 +5,6 @@ import (
 	"reflect"
 	"sort"
 	"strings"
-	"time"
 
 	"github.com/iVitaliya/logger-go"
 )
@@ -413,10 +412,10 @@ func (array *Array[T]) Pop() T {
 // (from left to right) so as to reduce it to a single value.
 //
 // The callback function takes four arguments:
-//  - accumulator: The returned value of the previous callback, or the initial value.
-//  - value: The current element being processed in the array.
-//  - index: The index of the current element being processed in the array.
-//  - array: The array the element belongs to.
+//   - accumulator: The returned value of the previous callback, or the initial value.
+//   - value: The current element being processed in the array.
+//   - index: The index of the current element being processed in the array.
+//   - array: The array the element belongs to.
 //
 // The initial value is the first element of the array. If the array is empty, it returns a zero value of type T.
 func (array *Array[T]) Reduce(fn func(accumulator T, value T) T) T {
@@ -431,11 +430,11 @@ func (array *Array[T]) Reduce(fn func(accumulator T, value T) T) T {
 
 // ReduceRight applies a function against an accumulator and each element in the array
 // (from right to left) so as to reduce it to a single value.
-// 
+//
 // The callback function takes two arguments:
-//  - accumulator: The returned value of the previous callback, or the initial value.
-//  - value: The current element being processed in the array.
-// 
+//   - accumulator: The returned value of the previous callback, or the initial value.
+//   - value: The current element being processed in the array.
+//
 // The initial value is the last element of the array. If the array is empty, it returns a zero value of type T.
 func (array *Array[T]) ReduceRight(fn func(accumulator T, value T) T) T {
 	var result T
@@ -516,20 +515,104 @@ func (array *Array[T]) Splice(start, end int, value T) []T {
 	return append(array.array[:start], append([]T{value}, array.array[end:]...)...)
 }
 
-func (array *Array[T]) ToLocaleString(locale string, timezone string) string {
-	var result string
+// ToReverse returns a new array with the elements of the original array in reverse order.
+// The original array remains unchanged, and the returned array contains the same elements
+// but in reversed sequence.
+func (array *Array[T]) ToReverse() []T {
+	var result []T
 
-	switch reflect.TypeOf(array.array[0]).Kind() {
-	case reflect.String:
-		time.ParseInLocation()
+	for i := len(array.array) - 1; i >= 0; i-- {
+		result = append(result, array.array[i])
 	}
+
+	return result
 }
 
-func test() {
-	arr := []int{1, 5, 10, 11, 5, 3, 2, 11, 15}
-	t := NewWithEntries(arr)
+// ToSorted returns a new array with the elements of the original array sorted according to the provided comparison function.
+// The original array remains unchanged, and the returned array contains the same elements
+// but in the sorted sequence.
+// The comparison function determines the order of the elements. It takes two arguments, a and b,
+// which are elements of the array, and returns true if the element a should come before the element b.
+func (array *Array[T]) ToSorted(fn func(a, b T) bool) []T {
+	copySlice := make([]T, len(array.array))
+	copy(copySlice, array.array)
 
-	t.FindLast(func(i int) bool {
-
+	sort.Slice(copySlice, func(i, j int) bool {
+		return fn(copySlice[i], copySlice[j])
 	})
+
+	return copySlice
+}
+
+// ToSpliced returns a new array with elements added, removed, or replaced based on the specified parameters.
+// The 'start' parameter determines the index at which to begin changing the array. If negative, it is treated
+// as an offset from the end of the array. The 'deleteCount' parameter specifies the number of elements to remove
+// from the array starting at the 'start' index. If 'deleteCount' is negative, it is set to zero. If 'start' or
+// 'start + deleteCount' exceeds the array bounds, they are clamped appropriately. The 'items' parameter allows
+// for new elements to be added to the array at the 'start' index. The original array remains unchanged.
+func (array *Array[T]) ToSpliced(start, deleteCount int, items ...T) []T {
+	// Ensure start is within bounds.
+	if start < 0 {
+		start = 0
+		start += len(array.array)
+	}
+	if start > len(array.array) {
+		start = len(array.array)
+	}
+
+	// Ensure deleteCount is valid.
+	if deleteCount < 0 {
+		deleteCount = 0
+	}
+	if start+deleteCount > len(array.array) {
+		deleteCount = len(array.array) - start
+	}
+
+	result := make([]T, 0, len(array.array)-deleteCount+len(items))
+
+	result = append(result, array.array[:start]...)
+	result = append(result, items...)
+	result = append(result, array.array[start+deleteCount:]...)
+
+	return result
+}
+
+// ToString returns a string representation of the array, using the fmt package's Sprint function.
+// It is the same as calling fmt.Sprintf("%v", array.array).
+func (array *Array[T]) ToString() string {
+	return fmt.Sprintf("%v", array.array)
+}
+
+// Unshift adds one or more elements to the beginning of the array and returns the new array, along with its length.
+// The elements are inserted in the same order as they appear in the parameters.
+// The returned array is a new array with the same elements as the original array, but with the new elements added at the beginning.
+// The original array remains unchanged.
+func (array *Array[T]) Unshift(elements ...T) ([]T, int) {
+	result := append(elements, array.array...)
+
+	return result, len(result)
+}
+
+// Values returns the elements of the array as a slice.
+// The returned slice is a view over the same elements as the array.
+// Modifying the returned slice will modify the array.
+func (array *Array[T]) Values() []T {
+	return array.array
+}
+
+// With returns a new array with the value at the given index replaced with the given value.
+// If the index is out of range, it returns an error.
+// The returned array is a new array with the same elements as the original array, but with the element at the given index replaced.
+// The original array remains unchanged.
+func (array *Array[T]) With(index int, value T) ([]T, error) {
+	if index < 0 || index >= len(array.array) {
+		return nil, fmt.Errorf("index out of range")
+	}
+
+	newSlice := make([]T, len(array.array))
+	copy(newSlice, array.array)
+
+	newSlice[index] = value
+
+	return newSlice, nil
 }
